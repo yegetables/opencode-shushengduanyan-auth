@@ -13,6 +13,7 @@ test("codeFrom reads a pasted callback URL, and a bare code is not one", () => {
 test("looksLikeToken tells a uaa-token from an SSO code", () => {
   assert.equal(m.looksLikeToken("eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiIyMzU1MDA4NzUiLCJyb2wiOiJST0xFX1JFR0lTVEVSIiwiaXNzIjoiT3BlblhMYWIiLCJpYXQiOjE3OTU0MDA0NjQsInBob25lIjoiIiwiZW1haWwiOiIiLCJleHAiOjE3OTY2MTAwNjR9.fdbZma-SrDi3igtuqxZoxPPkastNEKProTxj8ikFJi9oMOE_nTZyoDhJtzjhns899h2ciI9LDeoH22ZpoDw9Yg"), true)
   assert.equal(m.looksLikeToken("a1b2c3d4e5f6"), false)
+  assert.equal(m.looksLikeToken("https://discovery.intern-ai.org.cn/token-plan/home"), false)
 })
 
 test("beijingISO puts the platform's zone on its times", () => {
@@ -182,7 +183,25 @@ test("a failed code exchange says why, without leaking the code", async () => {
     const r = await a.callback("https://discovery.intern-ai.org.cn/token-plan/home?code=used-once")
     assert.equal(r.type, "failed")
     assert.match(r.error, /SSO authentication failed/)
+    assert.match(r.error, /uaa-token/)
     assert.ok(!r.error.includes("used-once"))
+  } finally {
+    globalThis.fetch = real
+  }
+})
+
+test("a clean callback URL asks for the token instead, without any request", async () => {
+  const p = await ShushengDuanyanAuth()
+  const a = await p.auth.methods[0].authorize({ apiKey: "sk-test" })
+  const real = globalThis.fetch
+  globalThis.fetch = async () => {
+    throw new Error("no request should be made")
+  }
+  try {
+    const r = await a.callback("https://discovery.intern-ai.org.cn/token-plan/home")
+    assert.equal(r.type, "failed")
+    assert.match(r.error, /没有 code/)
+    assert.match(r.error, /uaa-token/)
   } finally {
     globalThis.fetch = real
   }

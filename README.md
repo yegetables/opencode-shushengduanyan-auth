@@ -32,19 +32,30 @@ magpie quota                                 # 看墨点余额和 5h/7d
 
 ### 1 · 网页登录（粘贴回调 URL）
 
-按「登录」，magpie 会打开书生 SSO 页面：
+按「登录」，插件会给出书生 SSO 的地址：
 
 ```
 https://sso.openxlab.org.cn/authentication?redirect=…&clientId=dagw07mkg1bazlxzoy31&source=discovery
 ```
 
-用书生的账号登录后，浏览器跳回 `discovery.intern-ai.org.cn`，地址栏里带 `?code=…`。把**整条 URL**（或只把 `code` 那一段）粘进 magpie 的 Code 输入框。插件会：
+**magpie 跑在服务器 / Docker 里时不会替你开浏览器**（它会在服务器上调 `xdg-open`，那儿没有浏览器）。把对话框里那段链接复制到新标签页打开，用书生账号登录。
 
-1. `POST /api/user-center/v1/users/auth` `{code}` 换到网页登录态（`uaa-token`）；
+登录后浏览器跳回 `discovery.intern-ai.org.cn`：
+
+- 地址栏**还带** `?code=…`：把整条 URL（或只把 `code`）粘进 Code 输入框。
+- 地址栏**已经干净**（页面自己把 code 换掉并清掉了）：粘 `uaa-token` 也一样，F12 → Console 跑：
+
+  ```js
+  copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])
+  ```
+
+插件收到后：
+
+1. 有 code 就 `POST /api/user-center/v1/users/auth` `{code}` 换到网页登录态（`uaa-token`）；没有 code 就把它当 token 验一遍；
 2. 登录前如果没填 API Key，就在 TokenPlan 里新建一个名为 `magpie-20261123-1520` 的 Key（回复里才有完整 key）；
 3. 用 `/v1/models` 验一遍 Key，然后存账号。
 
-> code 只能用一次。如果提示「SSO authentication failed」，重新点一次登录再来。
+> code 只能用一次，而且书生页面自己也会拿它换登录态——抢不到就粘 token，效果一样。
 
 ### 2 · 直接粘贴 API Key
 

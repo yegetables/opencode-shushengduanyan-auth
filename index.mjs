@@ -82,11 +82,17 @@ function codeFrom(text) {
   return ""
 }
 
-// uaa-token 是一长串带点的串；SSO 的 code 短得多，也没有点。
+// uaa-token 是一长串带点的串；SSO 的 code 短得多，也没有点。网址不是 token，
+// 哪怕它带好几个点。
 function looksLikeToken(s) {
   const t = String(s ?? "").trim()
+  if (!t || /^https?:\/\//i.test(t)) return false
   return t.length > 60 || t.split(".").length >= 3
 }
+
+// 网页已经自己把 code 用掉时，怎么把 uaa-token 拿出来
+const TOKEN_HOW =
+  "F12 → Console 跑 copy(localStorage['uaa-token'] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])，把 token 粘回来"
 
 function stamp(d = new Date()) {
   const p = (n) => String(n).padStart(2, "0")
@@ -271,7 +277,7 @@ function defaultModels() {
 // 网页登录：换码 → 换 token → 校验 Key → 存账号
 async function webLogin(pasted, apiKey) {
   const text = String(pasted ?? "").trim()
-  if (!text) return { type: "failed", error: "把登录后地址栏的整条 URL 粘进来（里面有 code=…）" }
+  if (!text) return { type: "failed", error: "把登录后地址栏的整条 URL 粘进来（里面有 code=…），或者直接粘 uaa-token" }
 
   let token = ""
   const code = codeFrom(text)
@@ -279,8 +285,14 @@ async function webLogin(pasted, apiKey) {
     try {
       token = await exchangeCode(code)
     } catch (e) {
-      return { type: "failed", error: `${e.message}；code 只能用一次，重新点一次登录再粘` }
+      return {
+        type: "failed",
+        error: `${e.message}；code 只能用一次 —— 如果页面已经自己换过登录态（地址栏里没有 ?code= 了），就${TOKEN_HOW}`,
+      }
     }
+  } else if (/^https?:\/\//i.test(text)) {
+    // 一条干净的 URL：页面把 code 用掉并清掉了，只能要 token
+    return { type: "failed", error: `这条 URL 里没有 code（页面已经自己换过登录态了）：${TOKEN_HOW}` }
   } else {
     // 没带 ?code=：先当 code 试，失败了再当 token 试
     let why = ""
@@ -365,7 +377,10 @@ export const ShushengDuanyanAuth = async () => ({
           return {
             url: loginURL(),
             instructions:
-              "用书生的账号登录。登录后浏览器会跳回 discovery.intern-ai.org.cn，地址栏里带 ?code=…；把整条 URL（或只把 code）粘到下面。",
+              "magpie 跑在服务器 / Docker 里时不会替你打开浏览器：把下面那段登录链接（sso.openxlab.org.cn/authentication…）复制到新标签页打开，用书生账号登录。" +
+              "登录后浏览器会跳回 discovery.intern-ai.org.cn —— 地址栏还带 ?code=… 就把整条 URL 粘到下面；" +
+              "如果页面已经自己换过登录态（地址栏是干净的），就粘 uaa-token：" +
+              "F12 → Console 跑 copy(localStorage['uaa-token'] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])。",
             method: "code",
             callback: (pasted) => webLogin(pasted, apiKey),
           }
