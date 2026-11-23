@@ -136,11 +136,14 @@ test("labelOf names an account by its email, else its key", () => {
   assert.equal(m.labelOf(null, "sk-xxxx1234"), "书生 1234")
 })
 
-test("loginURL carries the site's own clientId and redirect", () => {
+test("loginURL carries the site's own clientId and a redirect nothing consumes", () => {
   const u = new URL(m.loginURL())
   assert.equal(u.origin + u.pathname, "https://sso.openxlab.org.cn/authentication")
   assert.equal(u.searchParams.get("clientId"), "dagw07mkg1bazlxzoy31")
-  assert.equal(u.searchParams.get("redirect"), "https://discovery.intern-ai.org.cn/token-plan/home")
+  // a JSON endpoint on the whitelisted host: no page JS runs to spend the code
+  const redirect = new URL(u.searchParams.get("redirect"))
+  assert.equal(redirect.origin, "https://discovery.intern-ai.org.cn")
+  assert.equal(redirect.pathname, "/api/tokenplan/v1/public/models")
   assert.equal(u.searchParams.get("source"), "discovery")
 })
 
@@ -157,7 +160,7 @@ test("the plugin declares the provider, both sign-ins, and the usage card", asyn
 
   assert.equal(p.auth.provider, m.PROVIDER)
   assert.deepEqual(p.auth.methods.map((x) => x.type), ["oauth", "api"])
-  assert.equal(p.auth.methods[0].label, "网页登录（登录后粘 uaa-token）")
+  assert.equal(p.auth.methods[0].label, "网页登录（登录后粘回跳 URL）")
   // the link shows up at once: no question stands between the click and the page
   assert.equal(p.auth.methods[0].prompts, undefined)
   assert.equal(p.auth.methods[1].prompts[0].key, "uaaToken")

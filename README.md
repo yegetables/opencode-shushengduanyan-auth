@@ -30,7 +30,7 @@ magpie quota                                 # 看墨点余额和 5h/7d
 
 ## 两种登录
 
-### 1 · 网页登录（登录后粘 uaa-token）
+### 1 · 网页登录（登录后粘回跳 URL）
 
 按「登录」→「网页登录」，对话框立刻给出书生 SSO 的地址：
 
@@ -38,21 +38,19 @@ magpie quota                                 # 看墨点余额和 5h/7d
 https://sso.openxlab.org.cn/authentication?redirect=…&clientId=dagw07mkg1bazlxzoy31&source=discovery
 ```
 
-**magpie 跑在服务器 / Docker 里时不会替你开浏览器**（它会在服务器上调 `xdg-open`，那儿没有浏览器），所以要把对话框里那段地址复制到新标签页打开，用书生账号登录。
+**magpie 跑在服务器 / Docker 里时不会替你开浏览器**（它会在服务器上调 `xdg-open`，那儿没有浏览器），所以要把对话框里那段地址复制到新标签页打开，用书生账号登录（已经登录过 SSO 的话会直接跳走）。
 
-登录完回到 `discovery.intern-ai.org.cn`，F12 → Console 跑：
+登录后浏览器会停在**一个 JSON 页面**上（公开模型列表），地址栏里带着 `?code=…`。这是故意的：那个地址没有页面脚本，不会把 code 用掉，所以**把地址栏整条 URL 复制回来**粘进对话框就行。
 
-```js
-copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])
-```
+插件随后：
 
-把复制到的 `uaa-token` 粘进对话框（地址栏里还留着 `?code=…` 的话，整条 URL 粘回来也行）。插件随后：
-
-1. 有 code 就 `POST /api/user-center/v1/users/auth` `{code}` 换到登录态；没有 code 就把它当 token 验一遍余额接口；
+1. `POST /api/user-center/v1/users/auth` `{code}` 换到登录态；
 2. 在 TokenPlan 里新建一个名为 `magpie-20261123-1520` 的 API Key（回复里才有完整 key）；
 3. 用 `/v1/models` 验一遍 Key，存账号，卡片立刻有墨点余额。
 
-> 书生没有设备码 / CLI 轮询接口，登录态只能从浏览器里带回来一次，所以这一步必须粘。**code 只能用一次**，而且书生页面落地时自己也会拿它换登录态——抢不到就粘 token，效果一样。
+> SSO 的重定向白名单只比**域名**（`sso-main.js` 里的 `Vt`：取 URL 的 host 与白名单条目比，子域名也算），所以可以把回跳指到同一域名下的任意路径。指到 `/token-plan/home` 的话，页面脚本落地就会拿 code 去换登录态，你复制到的 URL 里 code 已经失效；指到那个 JSON 接口就不会。
+>
+> 粘 `uaa-token` 本身也行（F12 → Console：`copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])`）。
 >
 > 每次网页登录会新建一个 `magpie-…` 的 Key（一个账号最多 10 个）。攒多了去 TokenPlan 页面把旧的停用/删掉即可。
 

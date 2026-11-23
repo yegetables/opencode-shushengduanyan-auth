@@ -23,7 +23,11 @@ const KEYS_URL = `${WEB}/api/tokenplan/v1/keys`
 const SSO = "https://sso.openxlab.org.cn/authentication"
 // 书生·端砚 前端自己的 clientId 与回跳地址（discovery-home 的 product/auth.js）
 const CLIENT_ID = "dagw07mkg1bazlxzoy31"
-const REDIRECT = `${WEB}/token-plan/home`
+// 登录后的回跳地址。SSO 的白名单只比域名（sso-main.js 的 Vt：取 URL 的 host，
+// 与白名单条目比，子域名也算），所以这里可以指一个**不会被前端用掉 code** 的
+// 地址：公开模型列表返回纯 JSON，页面没有 JS，地址栏里的 ?code= 会一直留着，
+// 用户复制整条 URL 就能换登录态。
+const REDIRECT = `${WEB}/api/tokenplan/v1/public/models?page=1&page_size=5`
 
 // 平台已知的模型：上下文、图片、思考档位。实时列表优先，这里只是兜底。
 // 价格（墨点 / 百万 token，缓存命中 / 未命中 / 输出）见 README，magpie 的
@@ -303,8 +307,11 @@ async function webLogin(pasted, apiKey) {
       }
     }
   } else if (/^https?:\/\//i.test(text)) {
-    // 一条干净的 URL：页面把 code 用掉并清掉了，只能要 token
-    return { type: "failed", error: `这条 URL 里没有 code（页面已经自己换过登录态了）：${TOKEN_HOW}` }
+    // 一条干净的 URL：SSO 没把 code 加回来，或者页面把它用掉了
+    return {
+      type: "failed",
+      error: `这条 URL 里没有 code —— 登录后应该停在一个 JSON 页面、地址栏里带着 ?code=…；没停到那儿就重新登录一次。也可以直接粘 uaa-token：${TOKEN_HOW}`,
+    }
   } else {
     // 没带 ?code=：先当 code 试，失败了再当 token 试
     let why = ""
@@ -375,15 +382,15 @@ export const ShushengDuanyanAuth = async () => ({
     methods: [
       {
         type: "oauth",
-        label: "网页登录（登录后粘 uaa-token）",
+        label: "网页登录（登录后粘回跳 URL）",
         async authorize() {
           return {
             url: loginURL(),
             instructions:
               "复制下面那段登录链接，在新标签页打开 —— magpie 跑在 Docker / 服务器上时不会替你开浏览器。" +
-              "登录完回到 discovery.intern-ai.org.cn，按 F12 → Console 跑 copy(localStorage['uaa-token'] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])，" +
-              "把复制到的 uaa-token 粘到下面（地址栏里还留着 ?code=… 的话，整条 URL 粘回来也行）。" +
-              "插件会用这个登录态新建一个 magpie-… 的 API Key（可在 TokenPlan 页面停用），并读出墨点余额。",
+              "用书生账号登录（已经登录过 SSO 的话会直接跳走）。" +
+              "登录后浏览器会停在一个 JSON 页面上（这是正常的，?code= 就留在地址栏里），把地址栏整条 URL 复制回来粘到下面。" +
+              "插件会用它换登录态、新建一个 magpie-… 的 API Key（可在 TokenPlan 页面停用），并读出墨点余额。",
             method: "code",
             callback: (pasted) => webLogin(pasted, ""),
           }
