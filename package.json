@@ -1,0 +1,45 @@
+{
+  "name": "opencode-shushengduanyan-auth",
+  "version": "0.1.0",
+  "description": "书生·端砚（Intern InkStone）TokenPlan for magpie：网页 SSO 登录（粘贴回调 URL）或直接粘贴 API Key，墨点余额与 5 小时 / 7 天限额卡片",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./server": "./index.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "README.md",
+    "LICENSE",
+    "assets"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-plugin",
+    "opencode",
+    "opencode-plugin",
+    "intern",
+    "inkstone",
+    "shusheng",
+    "书生",
+    "tokenplan"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "live": "node scripts/live.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yegetables/opencode-shushengduanyan-auth.git"
+  },
+  "homepage": "https://github.com/yegetables/opencode-shushengduanyan-auth#readme",
+  "bugs": {
+    "url": "https://github.com/yegetables/opencode-shushengduanyan-auth/issues"
+  },
+  "magpie": {
+    "maxConcurrency": 4,
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxYjJhNGEiLz48cGF0aCBkPSJNMTcgNDFjMC02LjYgNi43LTEyIDE1LTEyczE1IDUuNCAxNSAxMmMwIDQuNC02LjcgNy0xNSA3cy0xNS0yLjYtMTUtN3oiIGZpbGw9IiNmNGYxZWEiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI1IiByPSI2LjUiIGZpbGw9IiM0YTdiZDYiLz48L3N2Zz4="
+  }
+}
