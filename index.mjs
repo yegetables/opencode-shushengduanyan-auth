@@ -423,7 +423,12 @@ export const ShushengDuanyanAuth = async () => ({
       const auth = await getAuth()
       const token = String(auth?.metadata?.uaaToken ?? "").trim()
       if (!token) {
-        return { error: "还没有网页 token：用「网页登录」登录一次，或在「直接粘贴」里补上", windows: [] }
+        return {
+          error:
+            "还没有网页 token：在这一行重新登录一次，选「API Key（个人中心 → TokenPlan → API Key）」，" +
+            "把 token 和原来那个 API Key 一起填 —— 同一个 key 会替换这个账号，不会多出一行",
+          windows: [],
+        }
       }
       let data
       try {

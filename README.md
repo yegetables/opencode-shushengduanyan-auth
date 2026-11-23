@@ -64,6 +64,21 @@ https://sso.openxlab.org.cn/authentication?redirect=…&clientId=dagw07mkg1bazlx
 copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])
 ```
 
+> `copy()` 自己返回 `undefined` 是正常的，值已经进剪贴板。想先看结果就跑
+> `const ls = localStorage['uaa-token']; const ck = (document.cookie.split('; ').find(x => x.startsWith('uaa-token=')) || '').slice(10); console.log({ ls, ck });`
+> 两个都空就是 httpOnly，去 DevTools → Application → Cookies → `discovery.intern-ai.org.cn` 里复制 `uaa-token` 的值。
+
+### 给已有账号补网页 token
+
+API Key 登进来的账号没有 token，卡片会写「还没有网页 token」。补的办法是**重新登录一次同一个账号**：
+
+1. 插件 → 书生·端砚 → 那个账号那一行 → 重新登录
+2. 选「API Key（个人中心 → TokenPlan → API Key）」
+3. 第一个框粘网页 token，第二个框粘**原来那个** API Key
+4. 保存
+
+同一个 key 会被认成同一个账号，直接替换、不会多出一行（`settle()` 比的是 key）。
+
 ## 为什么不能像 zcode / cline / commandcode 那样自己完成
 
 那几个插件不用你粘东西，是因为厂商给了它们一条不用浏览器的路：
