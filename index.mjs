@@ -290,6 +290,18 @@ function defaultModels() {
   return out
 }
 
+// 余额接口偶发会把一个好好的 token 判成 user token expired（实测过一次：同一个
+// token 一分钟后恢复正常），所以验 token 失败时先等一会儿再试一次，别把人挡在门外。
+async function verifyToken(token) {
+  try {
+    return await balanceOf(token)
+  } catch (e) {
+    if (!e?.expired) throw e
+    await new Promise((r) => setTimeout(r, 2000))
+    return balanceOf(token)
+  }
+}
+
 // 网页登录：换码 → 换 token → 校验 Key → 存账号
 async function webLogin(pasted, apiKey) {
   const text = String(pasted ?? "").trim()
@@ -324,7 +336,7 @@ async function webLogin(pasted, apiKey) {
       if (!looksLikeToken(text)) return { type: "failed", error: `${why}；贴的是登录后的整条 URL 吗？` }
       const t = tokenOf(text)
       try {
-        await balanceOf(t)
+        await verifyToken(t)
         token = t
       } catch (e) {
         return { type: "failed", error: `${why}；当 token 用也失败：${e.message}` }
@@ -409,26 +421,6 @@ export const ShushengDuanyanAuth = async () => ({
             validate: () => undefined,
           },
         ],
-        // 存之前先拿余额接口验一遍 token：平台不认就直接拒绝，别存一张读不出数的卡
-        async authorize(inputs) {
-          const token = tokenOf(inputs?.uaaToken)
-          if (token) {
-            try {
-              await balanceOf(token)
-            } catch (e) {
-              if (e?.expired) {
-                return {
-                  type: "failed",
-                  error:
-                    "这个网页 token 平台已经不认了（user token expired）。每个书生账号只保留最新一次登录的 token —— " +
-                    "重新登录那个账号，立刻复制 token 再粘回来，之后别再登这个号。",
-                }
-              }
-              // 余额接口只是一时失败：照存，卡片会写出原因
-            }
-          }
-          return { type: "success", metadata: { uaaToken: token } }
-        },
       },
     ],
 
@@ -452,12 +444,12 @@ export const ShushengDuanyanAuth = async () => ({
       }
       let data
       try {
-        data = await balanceOf(token)
+        data = await verifyToken(token)
       } catch (e) {
         // 只影响卡片，不影响推理
         return {
           error: e?.expired
-            ? "网页 token 失效了（过期，或这个账号后来又在别处登录过）：重新登录这个账号，立刻复制 token 补回来（推理不受影响）"
+            ? "暂时读不到余额：平台回 user token expired —— 有时只是平台一时抽风，下一分钟会自动再试；一直这样就在这个账号上重新登录、立刻复制新 token"
             : String(e?.message ?? e),
           windows: [],
           signIn: "kept",
@@ -512,5 +504,6 @@ export const _internal = {
   num,
   stamp,
   tokenOf,
+  verifyToken,
   windowsOf,
 }

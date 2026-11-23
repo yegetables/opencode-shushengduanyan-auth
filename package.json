@@ -1,6 +1,6 @@
 {
   "name": "opencode-shushengduanyan-auth",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "书生·端砚（Intern InkStone）TokenPlan for magpie：网页 SSO 登录（粘贴回调 URL）或直接粘贴 API Key，墨点余额与 5 小时 / 7 天限额卡片",
   "type": "module",
   "main": "./index.mjs",
