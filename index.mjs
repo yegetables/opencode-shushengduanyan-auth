@@ -409,6 +409,26 @@ export const ShushengDuanyanAuth = async () => ({
             validate: () => undefined,
           },
         ],
+        // 存之前先拿余额接口验一遍 token：平台不认就直接拒绝，别存一张读不出数的卡
+        async authorize(inputs) {
+          const token = tokenOf(inputs?.uaaToken)
+          if (token) {
+            try {
+              await balanceOf(token)
+            } catch (e) {
+              if (e?.expired) {
+                return {
+                  type: "failed",
+                  error:
+                    "这个网页 token 平台已经不认了（user token expired）。每个书生账号只保留最新一次登录的 token —— " +
+                    "重新登录那个账号，立刻复制 token 再粘回来，之后别再登这个号。",
+                }
+              }
+              // 余额接口只是一时失败：照存，卡片会写出原因
+            }
+          }
+          return { type: "success", metadata: { uaaToken: token } }
+        },
       },
     ],
 
@@ -436,7 +456,9 @@ export const ShushengDuanyanAuth = async () => ({
       } catch (e) {
         // 只影响卡片，不影响推理
         return {
-          error: e?.expired ? "网页 token 已过期：重新登录一次（推理不受影响）" : String(e?.message ?? e),
+          error: e?.expired
+            ? "网页 token 失效了（过期，或这个账号后来又在别处登录过）：重新登录这个账号，立刻复制 token 补回来（推理不受影响）"
+            : String(e?.message ?? e),
           windows: [],
           signIn: "kept",
         }

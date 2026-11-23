@@ -184,6 +184,26 @@ test("the plugin declares the provider, both sign-ins, and the usage card", asyn
   assert.equal(l.apiKey, "sk-abc")
 })
 
+test("the key method checks a pasted token before saving it", async () => {
+  const p = await ShushengDuanyanAuth()
+  const real = globalThis.fetch
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ msgCode: "A0211", msg: "user token expired", data: null }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })
+  try {
+    const bad = await p.auth.methods[1].authorize({ uaaToken: "dead.token.here" })
+    assert.equal(bad.type, "failed")
+    assert.match(bad.error, /只保留最新一次登录/)
+  } finally {
+    globalThis.fetch = real
+  }
+  const empty = await p.auth.methods[1].authorize({})
+  assert.equal(empty.type, "success")
+  assert.deepEqual(empty.metadata, { uaaToken: "" })
+})
+
 test("a failed code exchange says why, without leaking the code", async () => {
   const p = await ShushengDuanyanAuth()
   const a = await p.auth.methods[0].authorize({ apiKey: "sk-test" })
