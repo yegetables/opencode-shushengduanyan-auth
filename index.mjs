@@ -362,27 +362,17 @@ export const ShushengDuanyanAuth = async () => ({
     methods: [
       {
         type: "oauth",
-        label: "网页登录（粘贴回调 URL）",
-        prompts: [
-          {
-            type: "password",
-            key: "apiKey",
-            message: "书生 TokenPlan API Key（留空则由插件新建一个 magpie-… 的 Key）",
-            placeholder: "sk-…（可留空）",
-            validate: () => undefined,
-          },
-        ],
-        async authorize(inputs) {
-          const apiKey = String(inputs?.apiKey ?? "").trim()
+        label: "网页登录（登录后粘 uaa-token）",
+        async authorize() {
           return {
             url: loginURL(),
             instructions:
-              "magpie 跑在服务器 / Docker 里时不会替你打开浏览器：把下面那段登录链接（sso.openxlab.org.cn/authentication…）复制到新标签页打开，用书生账号登录。" +
-              "登录后浏览器会跳回 discovery.intern-ai.org.cn —— 地址栏还带 ?code=… 就把整条 URL 粘到下面；" +
-              "如果页面已经自己换过登录态（地址栏是干净的），就粘 uaa-token：" +
-              "F12 → Console 跑 copy(localStorage['uaa-token'] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])。",
+              "复制下面那段登录链接，在新标签页打开 —— magpie 跑在 Docker / 服务器上时不会替你开浏览器。" +
+              "登录完回到 discovery.intern-ai.org.cn，按 F12 → Console 跑 copy(localStorage['uaa-token'] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])，" +
+              "把复制到的 uaa-token 粘到下面（地址栏里还留着 ?code=… 的话，整条 URL 粘回来也行）。" +
+              "插件会用这个登录态新建一个 magpie-… 的 API Key（可在 TokenPlan 页面停用），并读出墨点余额。",
             method: "code",
-            callback: (pasted) => webLogin(pasted, apiKey),
+            callback: (pasted) => webLogin(pasted, ""),
           }
         },
       },

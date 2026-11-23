@@ -151,8 +151,9 @@ test("the plugin declares the provider, both sign-ins, and the usage card", asyn
 
   assert.equal(p.auth.provider, m.PROVIDER)
   assert.deepEqual(p.auth.methods.map((x) => x.type), ["oauth", "api"])
-  assert.equal(p.auth.methods[0].label, "网页登录（粘贴回调 URL）")
-  assert.equal(p.auth.methods[0].prompts[0].key, "apiKey")
+  assert.equal(p.auth.methods[0].label, "网页登录（登录后粘 uaa-token）")
+  // the link shows up at once: no question stands between the click and the page
+  assert.equal(p.auth.methods[0].prompts, undefined)
   assert.equal(p.auth.methods[1].prompts[0].key, "uaaToken")
 
   // authorize hands back the sign-in page and a code callback
