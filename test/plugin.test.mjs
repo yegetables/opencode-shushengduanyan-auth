@@ -123,6 +123,12 @@ test("buildModels keeps the last list when the reply has no models", () => {
   assert.equal(m.buildModels(null), null)
 })
 
+test("tokenOf takes a token out of a pasted cookie string", () => {
+  assert.equal(m.tokenOf("uaa-token=abc.def.ghi; other=1"), "abc.def.ghi")
+  assert.equal(m.tokenOf("abc.def.ghi"), "abc.def.ghi")
+  assert.equal(m.tokenOf("  abc  "), "abc")
+})
+
 test("labelOf names an account by its email, else its key", () => {
   assert.equal(m.labelOf({ sso_email: "a@b.c" }, "sk-xxxx1234"), "a@b.c")
   assert.equal(m.labelOf({ sso_phone: "15500000000" }, "sk-xxxx1234"), "15500000000")

@@ -94,6 +94,18 @@ function looksLikeToken(s) {
 const TOKEN_HOW =
   "F12 → Console 跑 copy(localStorage['uaa-token'] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])，把 token 粘回来"
 
+// 粘进来的可能只是一段 token，也可能连着 "uaa-token=…; other=…" 一起粘了
+function tokenOf(text) {
+  const s = String(text ?? "").trim()
+  const m = /(?:^|[;\s])uaa-token=([^;\s]+)/.exec(s)
+  if (!m) return s
+  try {
+    return decodeURIComponent(m[1])
+  } catch {
+    return m[1]
+  }
+}
+
 function stamp(d = new Date()) {
   const p = (n) => String(n).padStart(2, "0")
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
@@ -303,9 +315,10 @@ async function webLogin(pasted, apiKey) {
     }
     if (!token) {
       if (!looksLikeToken(text)) return { type: "failed", error: `${why}；贴的是登录后的整条 URL 吗？` }
+      const t = tokenOf(text)
       try {
-        await balanceOf(text)
-        token = text
+        await balanceOf(t)
+        token = t
       } catch (e) {
         return { type: "failed", error: `${why}；当 token 用也失败：${e.message}` }
       }
@@ -378,13 +391,13 @@ export const ShushengDuanyanAuth = async () => ({
       },
       {
         type: "api",
-        label: "直接粘贴 API Key",
+        label: "API Key（个人中心 → TokenPlan → API Key）",
         placeholder: "sk-…",
         prompts: [
           {
             type: "password",
             key: "uaaToken",
-            message: "网页 token（可选，填了才有墨点余额和 5h/7d 限额卡片）",
+            message: "网页 token（可选，填了才有墨点余额和 5h/7d 限额卡片；F12 → Console 里取）",
             placeholder: "uaa-token…（可留空）",
             validate: () => undefined,
           },
@@ -464,5 +477,6 @@ export const _internal = {
   looksLikeToken,
   num,
   stamp,
+  tokenOf,
   windowsOf,
 }

@@ -56,7 +56,7 @@ copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1
 >
 > 每次网页登录会新建一个 `magpie-…` 的 Key（一个账号最多 10 个）。攒多了去 TokenPlan 页面把旧的停用/删掉即可。
 
-### 2 · 直接粘贴 API Key
+### 2 · API Key（个人中心 → TokenPlan → API Key）
 
 在 **个人中心 → TokenPlan → API Key** 建一个 Key，粘进 magpie 的 API Key 框。同一个框下面还能选填**网页 token**（`uaa-token`）——填了才有余额和限额卡片，不填也能正常推理。
 
@@ -65,6 +65,24 @@ copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1
 ```js
 copy(localStorage["uaa-token"] || document.cookie.match(/uaa-token=([^;]+)/)?.[1])
 ```
+
+## 为什么不能像 zcode / cline / commandcode 那样自己完成
+
+那几个插件不用你粘东西，是因为厂商给了它们一条不用浏览器的路：
+
+| 插件 | 靠什么 |
+|---|---|
+| zcode | `POST /api/v1/oauth/cli/init` 拿 `flow_id`，再轮询 `/api/v1/oauth/cli/poll/{flow_id}` 到 `ready` |
+| cline / opendesign | WorkOS 或自家的**设备码**，轮询 token 端点（`authorization_pending` → `access_token`） |
+| commandcode | 插件在 `127.0.0.1` 起一个回调，厂商页面把 key POST 进来；Docker 里够不着，就退回「去 keys 页面建一个 key 粘进来」 |
+
+书生这三样都没有，实测过：
+
+- SSO 没有设备码，也没有可轮询的登录状态接口；
+- 唯一的「凭 SSO 会话换 code」的接口 `POST /gw/uaa-be/api/v1/internal/auth {clientId}`，要求先有 SSO 会话，而拿会话的 `iam/issue-authorize` 直接返回 `A0246 lab network required`；
+- 手机号 + 短信验证码那条路被滑块验证码挡着（`getSmsCode` 必须带 `captchaVerifyParam`）。
+
+所以「浏览器登录 → 带回一个 token」这一步必须有人粘一次，插件能做的只是把这一步压到最短（点开就是链接、粘完自动建 Key 并读余额）。
 
 ## 余额卡片与 token 过期
 
